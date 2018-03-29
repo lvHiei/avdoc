@@ -1,0 +1,370 @@
+ffmpeg/ffplay/ffprobe设置日志   -loglevel info(warning/debug/trace)
+
+1.视频转码：
+ 
+ CRF:
+       
+       ffmpeg -y -v error -i Forrest_Gump_IMAX.mp4  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0  -preset medium    -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1 a_medium.mp4 
+       
+       ffmpeg -y -v error -i Forrest_Gump_IMAX.mp4  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0  -preset veryslow  -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1 a_slow.mp4 
+       
+       Two-pass ABR:                                                        -an 无音频 -f 输出文件格式 
+    (模板)：ffmpeg -y -i input -c:v libx264 -preset medium -b:v 555k -pass 1 -an -f mp4 /dev/null && 
+            ffmpeg -y -i input -c:v libx264 -preset medium -b:v 555k -pass 2 -c:a libfdkaac -b:a 128k  output.mp4
+       
+       
+         ffmpeg -y -v error -ss 00:01:10 -t 00:01:28 -i a-place-Nearby.mkv  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset veryslow -pass 1 -an -f mp4 /dev/null && 
+         ffmpeg -y -v error -ss 00:01:10 -t 00:01:28 -i a-place-Nearby.mkv  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset veryslow -pass 2 -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1   aa.mp4 
+       
+      	 ffmpeg -y -v error -i Forrest_Gump_IMAX.mp4  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset medium -pass 1 -an -f mp4 /dev/null &&
+      	 ffmpeg -y -v error -i Forrest_Gump_IMAX.mp4  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset medium -pass 2 -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1   b_medium.mp4 
+      	 
+      	 
+ 测试视频配置：
+      	 
+      	 ffmpeg -y -v error -i YYvideo.mkv  -movflags +faststart -vcodec libx264  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0  -preset veryslow  -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1 YYvideo_256x210_CRF.mp4 
+      	 
+      	 ffmpeg -y -v error -i YYvideo.mkv  -movflags +faststart -vcodec libx264  -s 480x360 -r 15.000000 -b:v 480k -profile:v baseline -level 3.0  -preset veryslow  -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1 YYvideo_480x360_CRF.mp4 
+      	 
+      	 
+      	 ffmpeg -y -v error -i music.mkv  -movflags +faststart -vcodec libx264 -g 10 -keyint_min 5  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset veryslow -pass 1 -an -f mp4 /dev/null && 
+         ffmpeg -y -v error -i music.mkv  -movflags +faststart -vcodec libx264 -g 10 -keyint_min 5  -s 256x210 -r 10.000000 -b:v 80k -profile:v baseline -level 3.0 -preset veryslow -pass 2 -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1   music.mp4 
+         
+         ffmpeg -y -v error -i YYvideo.mkv  -movflags +faststart -vcodec libx264 -g 10 -keyint_min 5 -s 480x360 -r 15.000000 -b:v 480k -profile:v baseline -level 3.0 -preset veryslow -pass 1 -an -f mp4 /dev/null && 
+         ffmpeg -y -v error -i YYvideo.mkv  -movflags +faststart -vcodec libx264 -g 10 -keyint_min 5 -s 480x360 -r 15.000000 -b:v 480k -profile:v baseline -level 3.0 -preset veryslow -pass 2 -acodec libfdk_aac -b:a 24k -channels 2 -ar 48000 -profile:a aac_he_v2  -eld_sbr 1   YYvideo_480x360_ABR.mp4 
+         
+2.视频合并：
+
+ffmpeg -i 1.avi -i 2.avi -i 3.avi -i 4.avi -filter_complex "nullsrc=size=640x480 [base]; [0:v] setpts=PTS-STARTPTS, scale=320x240 [upperleft]; [1:v] setpts=PTS-STARTPTS, scale=320x240 [upperright]; [2:v] setpts=PTS-STARTPTS, scale=320x240 [lowerleft]; [3:v] setpts=PTS-STARTPTS, scale=320x240 [lowerright]; [base][upperleft] overlay=shortest=1 [tmp1]; [tmp1][upperright] overlay=shortest=1:x=320 [tmp2]; [tmp2][lowerleft] overlay=shortest=1:y=240 [tmp3]; [tmp3][lowerright] overlay=shortest=1:x=320:y=240" -c:v libx264 output.mkv
+
+2个
+ffmpeg -i test.mp4 -i test.mp4 -filter_complex "[0:v:0]pad=iw:ih*2[bg]; [bg][1:v:0]overlay=0:h" output1.mp4 -y
+
+4个
+ffmpeg -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4 -filter_complex "[0:0]pad=iw*2:ih*2[a];[a][1:0]overlay=w[b];[b][2:0]overlay=0:h[c];[c][3:0]overlay=w:h"  output1.mp4 -y
+
+6个
+ffmpeg -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4  \
+-filter_complex "[0:0]pad=iw*3:ih*2[a];[a][1:0]overlay=w[b];[b][2:0]overlay=0:h[c];[c][3:0]overlay=w:h[d];[d][4:0]overlay=w*2:0[e];[e][5:0]overlay=w*2:h"   output1.mp4 -y
+
+6个
+ffmpeg -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4 -i test.mp4  \
+-filter_complex "[0:0]pad=iw*2:ih*3[a];[a][1:0]overlay=w[b];[b][2:0]overlay=0:h[c];[c][3:0]overlay=w:h[d];[d][4:0]overlay=0:h*2[e];[e][5:0]overlay=w:h*2"   output1.mp4 -y
+
+
+3、加水印
+
+视频加水印：
+ffmpeg -y -v error -i input.mp4 -movflags +faststart -vcodec libx264 -profile:v main -level 3 -r 20.000000 -b:v 240k -acodec libvo_aacenc -b:a 64k -s 320x240 -vf 'movie=watermark.png[logo];[in][logo]overlay=main_w-overlay_w-5:10[out]' output.mp4
+
+ffmpeg.exe -i D:/defaultring.mp4 -vf "movie=D:/tt.mp4 [watermark]; [in][watermark] overlay=0:0" -strict -2 D:/out.mp4加水印
+
+图片加水印：
+ffmpeg.exe -i input.bmp -vf "movie=watermark.png[tmp];[in][tmp] overlay=0:0" -f image2 output.bmp
+ffmpeg.exe -i 1.bmp -vf "movie=vvlive_audio_1.png[tmp];[in][tmp] overlay=0:0" -f image2 output.bmp
+
+画中画：
+ffmpeg -i rtmp://192.168.1.213/live/01 -i rtmp://192.168.1.213/live/02 -filter_complex overlay -f flv rtmp://192.168.1.213/live/03
+
+水印:
+ffmpeg -i input.mp4 -vf "format=yuv444p,drawbox=y=ih/PHI:color=black@0.4:width=iw:height=48:t=max,
+drawtext=fontfile=OpenSans-Regular.ttf:text='Title of this Video':fontcolor=white:fontsize=24:x=(w-tw)/2:y=(h/PHI)+th,format=yuv420p" 
+-c:v libx264 -c:a copy -movflags +faststart output.mp4
+
+4、rtmp推流
+
+1）将文件当做直播送至live
+ffmpeg -re -i localFile.mp4 -c copy -f flv rtmp://server/live/streamName  
+2）将直播媒体保存至本地文件
+ffmpeg -i rtmp://server/live/streamName -c copy dump.flv  
+3）将其中一个直播流，视频改用h264压缩，音频不变，送至另外一个直播服务流
+ffmpeg -i rtmp://server/live/originalStream -c:a copy -c:v libx264 -vpre slow -f flv rtmp://server/live/h264Stream  
+4）将其中一个直播流，视频改用h264压缩，音频改用faac压缩，送至另外一个直播服务流
+ffmpeg -i rtmp://server/live/originalStream -c:a libfaac -ar 44100 -ab 48k -c:v libx264 -vpre slow -vpre baseline -f flv rtmp://server/live/h264Stream  
+5）将其中一个直播流，视频不变，音频改用faac压缩，送至另外一个直播服务流
+ffmpeg -i rtmp://server/live/originalStream -acodec libfaac -ar 44100 -ab 48k -vcodec copy -f flv rtmp://server/live/h264_AAC_Stream 
+6）将一个高清流，复制为几个不同视频清晰度的流重新发布，其中音频不变
+ffmpeg -re -i rtmp://server/live/high_FMLE_stream -acodec copy -vcodec x264lib -s 640×360 -b 500k -vpre medium -vpre baseline rtmp://server/live/baseline_500k -acodec copy -vcodec x264lib -s 480×272 -b 300k -vpre medium -vpre baseline rtmp://server/live/baseline_300k -acodec copy -vcodec x264lib -s 320×200 -b 150k -vpre medium -vpre baseline rtmp://server/live/baseline_150k -acodec libfaac -vn -ab 48k rtmp://server/live/audio_only_AAC_48k  
+7）功能一样，只是采用-x264opts选项
+ffmpeg -re -i rtmp://server/live/high_FMLE_stream -c:a copy -c:v x264lib -s 640×360 -x264opts bitrate=500:profile=baseline:preset=slow rtmp://server/live/baseline_500k -c:a copy -c:v x264lib -s 480×272 -x264opts bitrate=300:profile=baseline:preset=slow rtmp://server/live/baseline_300k -c:a copy -c:v x264lib -s 320×200 -x264opts bitrate=150:profile=baseline:preset=slow rtmp://server/live/baseline_150k -c:a libfaac -vn -b:a 48k rtmp://server/live/audio_only_AAC_48k  
+8）将当前摄像头及音频通过DSSHOW采集，视频h264、音频faac压缩后发布
+ffmpeg -r 25 -f dshow -s 640×480 -i video=”video source name”:audio=”audio source name” -vcodec libx264 -b 600k -vpre slow -acodec libfaac -ab 128k -f flv rtmp://server/application/stream_name  
+9）将一个JPG图片经过h264压缩循环输出为mp4视频
+ffmpeg.exe -i INPUT.jpg -an -vcodec libx264 -coder 1 -flags +loop -cmp +chroma -subq 10 -qcomp 0.6 -qmin 10 -qmax 51 -qdiff 4 -flags2 +dct8x8 -trellis 2 -partitions +parti8x8+parti4x4 -crf 24 -threads 0 -r 25 -g 25 -y OUTPUT.mp4  
+10）将普通流视频改用h264压缩，音频不变，送至高清流服务(新版本FMS live=1)
+ffmpeg -i rtmp://server/live/originalStream -c:a copy -c:v libx264 -vpre slow -f flv “rtmp://server/live/h264Stream live=1″  
+
+
+5、切片
+ffmpeg -y -i rtmp://192.168.1.124:1935/ccfms/xcd7zmg8 -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -hls_list_size 5 -hls_time 5 -f hls -start_number 0 /home/output/_.m3u8
+
+
+6、视频采集推流rtmp
+ffmpeg -f dshow -i video="USB2.0 UVC HD Webcam":audio="麦克风 (Realtek High Definition Au" -s 640*480 -vcodec libx264 -b 300k -acodec libmp3lame -b:a 32k -f flv rtmp://192.168.2.105/ livee/stream
+
+7、YUV和RGB格式转换
+ffmpeg -s 360x270 -pix_fmt yuv420p -i  2_test_360x270_50.yuv -pix_fmt rgb24  aaaa.rgb
+
+8、ffmpeg加字幕
+
+字幕间转换：
+./ffmpeg -i music.lrc music.ass
+./ffmpeg -i music.lrc music.srt
+./ffmpeg -i music.srt music.ass
+
+libass使用ass字幕文件添加到视频上，最后是2路stream （需要安装libass库）：
+	（字幕文件后缀名为ass和ssa都可以使用，直接把后缀名改为txt也可以使用）跟后缀名字没有关系
+！！！！！！！由于这种将字幕直接加到视频上，是使用的videofilter（-vf），并且V->V的vf只有ass库支持，并没有srt库，所以-vf只能选择ass
+	
+			ffmpeg -i inputfile.m4v  -i subtitle.ssa -vcodec libx264 -b:v 500k -acodec copy -vf ass=subtitle.ssa  outputfile.mp4
+			ffmpeg -i inputfile.m4v  -i subtitle.ass -vcodec libx264 -b:v 500k -acodec copy -vf ass=subtitle.ass  outputfile.mp4
+			ffmpeg -i inputfile.m4v  -i subtitle.txt -vcodec libx264 -b:v 500k -acodec copy -vf ass=subtitle.txt  outputfile.mp4
+			
+			ffmpeg -i inputfile.m4v  -i subtitle.srt -vcodec libx264 -b:v 500k -acodec copy -vf subtitles=subtitle.srt  outputfile.mp4
+			
+			ffmpeg -i inputfile.mp4 -vf crop=1280:720:0:100 -vf rotate=PI/n -vf ass=subtilte.ass -vcodec libx264 -b:v 500k -acodec copy  outputfile.mp4
+			
+	ass字幕制作软件 Aegisub
+			
+			
+不用libass，直接把字幕作为一路流加到mp4上，最后是3路流。播放的时候需要播放字幕流，才能显示：
+(介绍地址：https://en.wikibooks.org/wiki/FFMPEG_An_Intermediate_Guide/subtitle_options)
+			Import a subtitle file (copy video/audio streams, without re-encoding):
+			
+			ffmpeg -i inputfile.mp4 -sub_charenc UTF-8 -i subtitle.srt -map 0:v -map 0:a -c copy -map 1 -c:s:0 mov_text -metadata:s:s:0 language=Chinese output.mp4
+			ffmpeg -i inputfile.mkv -sub_charenc UTF-8 -i subtitle.srt -map 0:v -map 0:a -c copy -map 1 -c:s:0 srt -metadata:s:s:0 language=Chinese output.mkv
+			or
+			ffmpeg -i inputfile.mp4 -sub_charenc UTF-8 -i subtitle.srt -vcodec copy -acodec copy -scodec mov_text -metadata:s:s:0 language=Chinese output.mp4
+			ffmpeg -i inputfile.mkv -sub_charenc UTF-8 -i subtitle.srt -vcodec copy -acodec copy -scodec srt -metadata:s:s:0 language=Chinese output.mkv
+			
+			Import subtitle and re-encode video/audio streams:[edit]
+			
+			ffmpeg -i inputfile.mov -sub_charenc UTF-8 -i subtitle.srt -vcodec h264 -acodec mp3 -scodec mov_text -metadata:s:s:0 language=Chinese output2.mp4
+			ffmpeg -i inputfile.avi -sub_charenc UTF-8 -i subtitle.srt -vcodec h264 -acodec ac3 -scodec srt -metadata:s:s:0 language=Chinese output2.mkv
+
+字幕流：
+mp4不支持srt和ass的tag
+./ffmpeg -i inputfile.m4v -sub_charenc UTF-8 -i subtitle.srt -map 0:v -map 0:a -c copy -map 1 -c:s:0 mov_text -metadata:s:s:0 language=Chinese output.mp4 
+./ffmpeg -i inputfile.mp4 -sub_charenc UTF-8 -i subtitle.srt -vcodec copy -acodec copy -scodec mov_text -metadata:s:s:0 language=Chinese output.mp4 
+./ffmpeg -i inputfile.mp4 -sub_charenc UTF-8 -i subtitle.ass -vcodec copy -acodec copy -scodec mov_text -metadata:s:s:0 language=Chinese output.mp4
+
+mkv支持srt和ass的tag
+./ffmpeg -i inputfile.m4v -sub_charenc UTF-8 -i subtitle.srt -vcodec copy -acodec copy -scodec srt -metadata:s:s:0 language=Chinese output.mkv
+./ffmpeg -i inputfile.m4v -sub_charenc UTF-8 -i subtitle.srt -vcodec copy -acodec copy -scodec ass -metadata:s:s:0 language=Chinese output.mkv   
+./ffmpeg -i inputfile.m4v -sub_charenc UTF-8 -i subtitle.ass -vcodec copy -acodec copy -scodec srt -metadata:s:s:0 language=Chinese output.mkv   
+./ffmpeg -i inputfile.m4v -sub_charenc UTF-8 -i subtitle.ass -vcodec copy -acodec copy -scodec ass -metadata:s:s:0 language=Chinese output.mkv   
+
+！！！！！ 从上面命令，可以看出，字幕文件格式什么样的都能使用，主要区别是srt格式只有字幕，ass格式的字幕可以调节字幕的颜色，字体等。所以ass有优势，ass是ssa的advanced版本，脚步语言都一样
+而最终决定字幕stream的是-scodec，他表示最终容器里存放的字幕编码格式 
+
+./ffmpeg -i t-mac_Life_Goes_On.wmv -vf "drawtext=fontfile=/shiwei/code/VideoFilter/font/simhei.ttf:fontcolor=green:fontsize=36:shadowy=4:x='if(gte(t,1), (main_w-mod(t*30,main_w+line_w)), NAN)':y=(main_h-line_h-10):text='Hello, 滚动字幕我来了.'" -f mp4 output.mp4
+
+
+厚己给的ffplay使用demo（目前没有测试可用性）
+1)、顶部水平滚动
+ffplay -i jidu.mp4 -vf drawtext="fontfile=arial.ttf:text='Dynamic RTL text':x=w-t*50:fontcolor=darkorange:fontsize=30"
+2)、底部水平滚动
+ffplay -i jidu.mp4 -vf drawtext="fontfile=arial.ttf:textfile=textfile.txt:x=w-t*50:y=h-th:fontcolor=darkorange:fontsize=30"
+3)、垂直从下往上滚动
+ffplay jidu.mp4 -vf drawtext="STXIHEI.TTF:textfile="convert_log.txt":x=(w-tw)/2:y=h-20*t:fontcolor=white:fontsize=30"
+
+
+9、ffmpeg将2路视频流合并到一起
+ffmpeg -y -i /Users/StevenLiu/Movies/guanlangaoshou.mp4 -i rtmp://kankan.c4hcdn.com/live/dragontv -filter_complex "[1:v:0]pad=iw*2:ih:iw:0[bg]; [bg][0:v:0]overlay=0:0output.mp4
+fmpeg -i input1 -i input2 -filter_complex "[0:v:0]pad=iw*2:ih[bg]; [bg][1:v:0]overlay=w" output
+
+10、获取摄像头，分片
+ffmpeg -f dshow -i video="Logitech HD Pro Webcam C910" -s 360*240 -b 300k -f hls -hls_list_size 5 -hls_wrap 10  C:\ffmpeg\test.m3u8
+
+11、音频混音
+ffmpeg -i  "rtmp://localhost:1935/hls/stream"  -i  "rtmp://localhost:1935/hls/stream"  -filter_complex  "amix=inputs=2:duration=first:dropout_transition=2"  -acodec aac -strict -2  
+//// -filter_complex  "amix=inputs=2:duration=first:dropout_transition=2" 
+
+12、图片jpg转为yuv
+ffmpeg -y -s 480x360  -i default2_1.jpg -pix_fmt yuv420p  out.yuv
+
+
+13、分享一条命令：截取160x120大小的一张图片，高度120px,宽度按比例调整，背景填充为黑色
+ffmpeg -ss 00:00:01 -i 001.mp4 -vf "scale=-1:120,pad=max(iw\,ih):ow:(ow-iw)/2:(oh-ih)/2:color=black" -s 160x120 -vframes 1 -y 002.jpg
+
+14、降低播放延迟
+ffplay -fflags nobuffer -max_delay 0 -fast -threads 1 -x 1280 -y 1024  rtmp://192.168.40.140:1935/hls/test
+
+15、把视频生成bmp图片
+ffmpeg -i input.mp4  -f image2   %d.bmp
+ffmpeg -i input.mp4 -vframes 1 -f image2   %d.bmp
+ffmpeg -ss 00:00:10 -i input.mp4 -vframes 1 -f image2   %d.bmp
+ffmpeg -i input.h264 -f image2   %d.bmp
+		把bmp图片生成视频
+ffmpeg -i %d.bmp -vcodec libx264 test.mp4
+
+
+16、播放YUV数据
+ffplay -f rawvideo -video_size 256x210 micpicture_256x210.yuv 
+
+17、视频跑马灯
+ffmpeg  -i input1.mp4  -i cuc_ieschool.mp4 -vcodec libx264 -an -filter_complex "overlay=x='if(gte(t,2), -w+(t-2)*20, NAN)':y=0" -s 320x240 output.mp4 -y
+
+ffmpeg  -i rtmp://ws.rtmp.live.51vv.com/live/1007341c74257e4e4d4f1abc982273358230a8  -i rtmp://ws.rtmp.live.51vv.com/live/1013266de477635d244ec39a8f4d5c13080c8b  -vcodec libx264 -acodec aac -filter_complex "overlay=x='if(gte(t,2), -w+(t-2)*20, NAN)':y=0" -s 320x240  -f flv rtmp://ws.upload.live.51vv.com/live/10017008ce77280f1b41f3b6326f83c78351a1
+
+
+18、视频连接concat
+ffmpeg -i opening.mkv -i episode.mkv -i ending.mkv -filter_complex '[0:0] [0:1] [0:2] [1:0] [1:1] [1:2] [2:0] [2:1] [2:2] concat=n=3:v=1:a=2 [v] [a1] [a2]' -map '[v]' -map '[a1]' -map '[a2]' output.mkv
+
+ffmpeg -i 1.mp4 -i 2.mp4 -i 3.mp4 -i 4.mp4 -filter_complex '[0:0] [0:1] [1:0] [1:1] [2:0] [2:1] [3:0] [3:1] concat=n=4:v=1:a=1 [v] [a]' -map '[v]' -map '[a]' output.mp4 -y
+
+ffmpeg -i 1.mp4 -i 2.mp4 -i 3.mp4 -i 4.mp4 -filter_complex '[0:0] [0:1] [1:0] [1:1] [2:0] [2:1] [3:0] [3:1] concat=n=4:v=1:a=1 [v] [a]' -map '[v]' -map '[a]' -vcodec libx264 -preset fast -acodec libfdk_aac -b:a 64k -channels 2 -ar 48000 -profile:a aac_he_v2 output.mp4 -y
+
+19、png转yuv
+ffmpeg -i src.png -s wxh -pix_fmt yuva420p dest.yuv
+ffplay -f rawvideo -pixel_format yuva444p -video_size 1280x720 .\dest.yuv
+
+20、ffmpeg同时   变色和加水印
+-vf "[in]boxblur=2:1:cr=0:ar=0[middle]; [middle]movie=testlogo.png [watermark]; [middle][watermark] overlay=10:10 [out]"
+
+21、循环推流一个文件 -stream_loop number (input): Set number of times input stream shall be looped. Loop 0 means no loop, loop -1 means infinite loop.
+
+ffmpeg -re -stream_loop -1 -i cuc_ieschool.mp4 -vcodec copy -acodec copy -f flv -y  rtmp://115.28.161.7/live/999
+
+./ffmpeg -re -stream_loop 10  -i cuc_ieschool.mp4  -i subtitle.ass -vcodec libx264 -b:v 500k -acodec copy -vf ass=subtitle.ass  -f flv  -y rtmp://ws.upload.live.51vv.com/live/10000097f2244475294cfe9c835d9e7cd7b8cf
+
+ffmpeg -threads 2 -re -fflags +genpts -stream_loop -1 -i test.mp4 -s 640x360 -ac 2 -f flv -vcodec libx264 -profile:v baseline -b:v 600k -maxrate 600k -bufsize 600k -r 24 -ar 44100 -g 48 -c:a libfdk_aac -b:a 64k "rtmp://publish.live.metacdn.com"
+
+./ffmpeg -threads 2 -re -fflags +genpts -stream_loop -1 -i xiami_xinniangbushiwo.mp4  -c copy -f flv rtmp://ws.uprtmp.m.51vv.com/live/8241_222
+(The -fflags +genpts will regenerate the pts timestamps so it loops smoothly, otherwise the time sequence will be incorrect as it loops.)
+
+22、ffmpeg运行中修改filter的值
+ffmpeg -i abc.mp4 -vf "hue=h=0" aaa.mp4       然后按c，输入hue -1 h 100   就改了这个filter的值
+
+23、
+ffprobe -show_packets -of xml aaa.flv -select_streams v > video.xml
+ffprobe -show_frames -of xml aaa.flv -select_streams v > video.xml
+ffprobe -show_frames -of xml aaa.flv  > video.xml
+ffprobe -show_packets -of xml aaa.flv > video.xml
+
+ffprobe -read_intervals 40 -show_packets -of xml -select_streams v ~/Movies/objectC/facebook.mp4 >video.xml    （seek到40s）
+
+24、filter添加文字，drawtext
+ffmpeg -i input.mp4 -vf drawtext="fontfile=simhei.ttf:fontcolor=green:fontsize=30:text='五年级三班：英语 讲师：张磊磊'" -acodec copy -vcodec libx264 output.mp4
+ffmpeg -i input.flv -vf drawtext="fontfile=simhei.ttf:fontcolor=red:fontsize=20:text='五年级三班：英语 讲师：张磊磊':x=(main_w-text_w)/2:y=0" -acodec copy -vcodec libx264 output.mp4 -y
+ffmpeg -i rtmp://input -vf drawtext="fontfile=simhei.ttf:fontcolor=red:fontsize=30:text='五年级三班：英语 讲师：张磊磊':x=(main_w-text_w)/2:y=0" -acodec copy -vcodec libx264 -f flv rtmp://output
+
+添加时间：（-re，按照本地帧率读数据，必须要加上。否则时间显示不对。）
+ffmpeg -re -i input -vf drawtext="fontfile=simhei.ttf:fontsize=30:fontcolor=green:x=(main_w-text_w)/2:y=(main_h-text_h)/2:text='%{localtime\:%H\\\:%M\\\:%S %a %b %d %Y}'" -acodec copy -vcodec libx264 -f flv rtmp://
+
+在右上角显示当前时间 localtime
+ffplay jidu.mp4 -vf drawtext="fontfile=arial.ttf:x=w-tw:fontcolor=white:fontsize=30:text='%{localtime\:%H\\\:%M\\\:%S}'“
+每隔3秒显示一次当前时间
+ffplay jidu.mp4 -vf drawtext="fontfile=arial.ttf:x=w-tw:fontcolor=white:fontsize=30:text='%{localtime\:%H\\\:%M\\\:%S}':enable=lt(mod(t\,3)\,1)"
+
+25、aac解码为pcm
+ffmpeg -i input.aac -f s16le output.pcm
+ffmpeg -i input.aac -f wav output.wav
+ffmpeg -i input.aac -ac 1 -ab 16 -ar 16000 -f wav output.wav
+
+2个音频文件合成一个音频文件2个音频流 
+ffmpeg.exe -i input1.m4a -i input2.m4a -map 0:0 -map 1:0 -acodec copy -y output.mka
+
+合并两个音频文件
+echo "file 'a.m4a'" >> concat.list
+echo "file 'b.m4a'" >> concat.list
+ffmpeg -f concat concat.list -c:a aac -q:a 2 output.m4a
+
+两个stereo音频文件变为mono音频文件，然后合并两个音频文件为stereo
+ffmpeg -i 90261996.mp3.accom.wav -ar 44100 -ac 1 -y 11111.wav
+ffmpeg -i 90261996.mp3.vocal.wav -ar 44100 -ac 1 -y 22222.wav
+ffmpeg -i 11111.wav -i 22222.wav -filter_complex "amovie=11111.wav [l]; amovie=22222.wav [r]; [l] [r] amerge" -y  3333.wav
+
+26、ffmpeg切片hls
+./ffmpeg -i agrio_udp_tranport.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -map 0 -f segment -segment_list ./video_2/agrio_udp_tranport.m3u8 -segment_time 3 ./video_2/agrio_udp_tranport-%03d.ts
+./ffmpeg -i xiami_xinniangbushiwo.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 2 -hls_list_size 0 -hls_segment_filename 'xiami_xinniangbushiwo-%04d.ts' ./video_3/xiami_xinniangbushiwo.m3u8
+./ffmpeg -i xiami_xinniangbushiwo.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_init_time 0 -hls_time 2 -hls_list_size 0 -hls_segment_filename 'xiami_xinniangbushiwo-%04d.ts' ./video_3/xiami_xinniangbushiwo.m3u8
+
+./ffmpeg -re -i ~/Movies/objectC/facebook.mp4 -v verbose -c copy -f hls -hls_segment_filename test-%s.ts -use_localtime 1 -bsf:v h264_mp4toannexb aaa.m3u8
+新版本可以这样
+./ffmpeg -re -i ~/Movies/objectC/facebook.mp4 -v verbose -c copy -f hls -hls_segment_filename test-%s.ts -use_localtime 1 aaa.m3u8
+
+26、添加图片字幕和片尾（overlay and concat ）
+
+ffmpeg -ss 00:00:00 -t 00:00:22 -i xiami_xinniangbushiwo.mp4 -i subtitle_1.png -i subtitle_2.png -filter_complex "[0:v][1:v]overlay=x=50:y=300:enable='between(t,0,5.420000)'[out_1];[out_1][2:v]overlay=x=50:y=300:enable='between(t,6.022000,10.852000)'[out_2];[out_2][1:v]overlay=x=50:y=300:enable='between(t,11.022000,15.852000)'[out_3];[out_3][2:v]overlay=x=50:y=300:enable='between(t,16.022000,20.852000)'" -acodec copy -vcodec libx264 -b:v 500k -threads 4 -thread_type frame -preset faster -tune zerolatency -y test.mp4
+
+ffmpeg -ss 00:00:00 -t 00:00:22 -f concat -i filelist.txt  -i subtitle_1.png -i subtitle_2.png -filter_complex "[0:v][1:v]overlay=x=50:y=300:enable='between(t,0,5.420000)'[out_1];[out_1][2:v]overlay=x=50:y=300:enable='between(t,6.022000,10.852000)'[out_2];[out_2][1:v]overlay=x=50:y=300:enable='between(t,11.022000,15.852000)'[out_3];[out_3][2:v]overlay=x=50:y=300:enable='between(t,16.022000,20.852000)'" -acodec copy -vcodec libx264 -b:v 500k -threads 4 -thread_type frame -preset faster -tune zerolatency -y test.mp4
+
+ffmpeg -ss 00:00:00 -t 00:00:22 -i xiami_xinniangbushiwo.mp4 -i subtitle_1.png -i subtitle_2.png -loop 1 -t 4.5 -i tail-leader.jpg -filter_complex "[0:v][1:v]overlay=x=50:y=300:enable='between(t,0,5.420000)'[out_1];[out_1][2:v]overlay=x=50:y=300:enable='between(t,6.022000,10.852000)'[out_2];[out_2][1:v]overlay=x=50:y=300:enable='between(t,11.022000,15.852000)'[out_3];[out_3][2:v]overlay=x=50:y=300:enable='between(t,16.022000,20.852000)'[out_4];[3:v]scale=w=480:h=360[out_5];[out_4][out_5]concat" -acodec copy -vcodec libx264 -b:v 500k -threads 4 -thread_type frame -preset faster -tune zerolatency -y test.mp4
+
+ffmpeg -ss 00:00:00 -t 00:00:22 -f concat -i filelist.txt -i subtitle_1.png -i subtitle_2.png -loop 1 -t 4.5 -i tail-leader.jpg -filter_complex "[0:v][1:v]overlay=x=50:y=300:enable='between(t,0,5.420000)'[out_1];[out_1][2:v]overlay=x=50:y=300:enable='between(t,6.022000,10.852000)'[out_2];[out_2][1:v]overlay=x=50:y=300:enable='between(t,11.022000,15.852000)'[out_3];[out_3][2:v]overlay=x=50:y=300:enable='between(t,16.022000,20.852000)'[out_4];[3:v]scale=w=480:h=360[out_5];[out_4][out_5]concat" -acodec copy -vcodec libx264 -b:v 500k -threads 4 -thread_type frame -preset faster -tune zerolatency -y test.mp4
+
+ffmpeg -i separatevideo.mp4 -i logo.png -i 0.png -i 1.png -filter_complex "[0:v][1:v]overlay=5:5[tmp];[tmp][2:v]overlay=141.228027:420.199219:enable='between(t,0,1.420000)'[tmp];[tmp][3:v]overlay=67:445:enable='between(t,2.01,3.5)'[bepartofyou];[bepartofyou]colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131"  -vcodec libx264 -threads 4 -preset ultrafast -tune zerolatency -y 70a.mp4
+
+ffmpeg -i separatevideo.mp4 -i logo.png -i 0.png -i 1.png -filter_complex "[0:v]colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131[in];[in][1:v]overlay=5:5[tmp];[tmp][2:v]overlay=141.228027:420.199219:enable='between(t,0,1.420000)'[tmp];[tmp][3:v]overlay=67:445:enable='between(t,2.01,3.5)'"  -vcodec libx264 -threads 4 -preset ultrafast -tune zerolatency -y 70a.mp4
+
+27、ffmpeg对直播流截图
+
+27、覆盖视频metadata信息
+ ffmepg -i input.mp4 -map_metadata -1  -metadata info="12121313" -metadata from="china"  -c copy output.mp4
+
+28、ffmpeg通过aresample修改pcm采样率
+ffmpeg -f s16le -ar 8000 -ac 1 -i input.pcm  -af aresample=44100 -f s16le -ac 1 -y output.pcm
+
+ffmpeg -f s16le -ar 8000 -ac 1 -i speaker.pcm  -af aresample=44100 -f s16le -ac 1 -y output_speaker.pcm
+ffplay -f s16le -ar 8000 -ac 1  speaker.pcm
+ffplay -f s16le -ar 44100 -ac 1  output_speaker.pcm
+
+29、ffmpeg命令：pcm转wav:
+
+ffmpeg -f s16le -ar 44.1k -ac 2 -i file.pcm file.wav
+
+30、ffmpeg命令： yuv编码参数
+./ffmpeg -s 360x640 -i 360x640.yuv -vcodec libx264 -profile high -preset veryfast -tune zerolatency -r 25 -g 25 -threads 1 -thread_type frame -y test.h264
+
+ffmpeg.exe -ss 00:00:00 -t 00:00:10 -i huajiao-1.flv -an -vcodec copy -bsf:v h264_mp4toannexb -y huajiao-1.h264
+
+
+要使用一个视频的画面，另一个视频的音频，合成后还要打上2个水印
+ffmpeg -i vod1.mp4 -i vod2.mp4 -i logo1.png -i logo2.png -c:v libx264 -filter_complex "[2:v]null[wm1];[3:v]null[wm2];[0:v][wm1]overlay=x=10:y=10[v1];[v1][wm2] overlay=x=400:y=300[vout]" -map "[vout]" -map "1:a" -c:a aac -f flv rtmp://127.0.0.1/live/test
+ffmpeg -i ~/Movies/objectC/facebook.mp4 -i ~/Movies/rangzidanfei.mkv -i ~/Pictures/SACC.jpg -i ~/Pictures/IMG_8678.JPG -filter_complex "[2:v] scale=30:30 [wm1]; [3:v] scale=20:20 [wm2]; [0:v][wm1] overlay=x=10:y=10 [v1]; [v1][wm2] overlay=x=400:y=300 [vout]" -map "[vout]" -map "1:a" output.flv
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+g++ -o test simplest_ffmpeg_video_encoder.cpp -I/home/wupengqiang/work/linux_server/thirdparty/avmodule/build/include/ -I/home/wupengqiang/work/linux_server/thirdparty/avmodule/build/ffmpeg_release/include/ -L/home/wupengqiang/work/linux_server/thirdparty/avmodule/build/lib/ -L/home/wupengqiang/work/linux_server/thirdparty/avmodule/build/ffmpeg_release/lib/   -pthread -ldl -lrt  -lfdk-aac -lx264 -lpostproc -lavdevice -lswscale -lswresample -lavfilter -lavcodec  -lavutil -lavformat
+
+./ffmpeg -i agrio.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 2 -hls_list_size 0 -hls_allow_cache 0 -hls_segment_filename './2016-10-17/agrio.ts' ./2016-10-17/agrio.m3u8
+./ffmpeg -i agrio.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 8 -hls_flags 8 -hls_list_size 0 -hls_allow_cache 0 -hls_segment_filename './mp4/agrio%d.ts' ./mp4/agrio.m3u8
+
+./ffmpeg -i agrio.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 1 -hls_list_size 0 -hls_allow_cache 0 -hls_segment_filename './2016-10-17/agrio-%04d.ts' ./2016-10-17/agrio.m3u8
+
+./ffmpeg -i agrio.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 1 -hls_list_size 0 -hls_allow_cache 0 -hls_segment_filename './mp4/agrio-%04d.ts' ./mp4/agrio.m3u8
+
+./ffmpeg -i agrio.mp4 -y -vcodec copy -acodec copy -bsf:v h264_mp4toannexb -f hls -hls_time 1 -hls_list_size 0 -hls_allow_cache 0 -hls_segment_filename './hls/agrio-%04d.ts' ./hls/agrio.m3u8
+
+
+
+
+ffmpeg -f s16le -ar 8000 -ac 1 -i speaker.pcm  -af aresample=44100 -f s16le -ac 1 -y output_speaker.pcm
+ffplay -f s16le -ar 8000 -ac 1  speaker.pcm
+ffplay -f s16le -ar 44100 -ac 1  output_speaker.pcm
+
+
+
+音视频加速
+ffmpeg -i test_120.flv -r 50 -vf "setpts=0.5*PTS" -af "atempo=2.0" -acodec libfdk_aac -vcodec libx264 -y speedup.flv
